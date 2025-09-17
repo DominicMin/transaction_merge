@@ -1,14 +1,18 @@
-import alipay, wechat, wise
+import alipay, wechat, wise, boc
 import pandas as pd
 from sqlalchemy import create_engine
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
+print('\n\n')
 # Get records from all sources
 ali_rec = alipay.cvt_all()
 wx_rec =wechat.cvt_all()
 wise_rec = wise.cvt_all()
+boc_rec = boc.cvt_all()
 
 # Concatenate into one dataframe
-all_rec = pd.concat([ali_rec, wx_rec, wise_rec], ignore_index=True)
+all_rec = pd.concat([ali_rec, wx_rec, wise_rec, boc_rec], ignore_index=True)
 all_rec.drop_duplicates(inplace=True)
 all_rec.drop(columns=['id'], inplace=True)
 
@@ -36,5 +40,7 @@ engine = create_engine('sqlite:///account.db')
 all_rec.to_sql('users', con=engine, if_exists='replace', index=False)
 
 # Print summary
-print('\n\n')
-print(total_turnover)
+print('\n')
+print('-' * 56)
+print(total_turnover.to_markdown())
+print('-' * 56)

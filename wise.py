@@ -36,16 +36,19 @@ def cvt_record(source: pd.DataFrame, idx= False):
 def cvt_all(dir='source/wise'):
     source_list = glob.glob(f'{dir}/*.csv')
     rec_list = []
+    print('Wise', '-' * 30)
     def cvt_item(filepath):
         raw = pd.read_csv(filepath)
         cleaned = clean_raw(raw)
         s = cleaned['Created on'].min().strftime('%y%m%d'); e = cleaned['Created on'].max().strftime('%y%m%d')
+        print(f'Detected data from {s} to {e}')
         os.rename(filepath, f'{dir}/wise_{s}_{e}{os.path.splitext(filepath)[-1]}')
         record = cvt_record(cleaned)
         return record
     for f in source_list:
         rec_list.append(cvt_item(f))
     
+    print('Process complete for Wise!\n')
     all_rec = pd.concat(rec_list, ignore_index=True)
     return all_rec
 

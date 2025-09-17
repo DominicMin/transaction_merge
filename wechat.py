@@ -26,6 +26,7 @@ def clean_raw(raw: pd.DataFrame):
     raw.payment = raw.payment.map({'/': '零钱'}).fillna(raw.payment)
     raw.time = raw.time.apply(lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S'))
     raw.direction = raw.direction.map({'收入': 1, '支出': 0, '/': -1})
+    raw.amount = raw.amount.apply(lambda x: float(x[1:]))
 
     # Handle '/' cases
     rec_to_concat = pd.DataFrame()
@@ -44,6 +45,7 @@ def clean_raw(raw: pd.DataFrame):
         if r['type'] == '零钱提现':
             raw.loc[i, 'counterparty'] = '提现 to ' + raw.loc[i, 'counterparty']
             raw.loc[i, 'direction'] = 1
+            raw.loc[i, 'amount'] = raw.loc[i, 'amount'] / 1.01
             new_rec = raw.loc[i].copy()
             new_rec['payment'] = '零钱'
             new_rec['direction'] = 0
@@ -52,8 +54,8 @@ def clean_raw(raw: pd.DataFrame):
     raw = pd.concat([raw, rec_to_concat], ignore_index=True)
 
     raw.amount = raw.apply(lambda x: 
-    -float(x['amount'][1:]) if x['direction'] == 0
-    else float(x['amount'][1:]),
+    -x['amount'] if x['direction'] == 0
+    else x['amount'],
     axis=1)
 
     return raw
@@ -78,16 +80,19 @@ def cvt_record(source: pd.DataFrame, idx=False):
 def cvt_all(dir='source/wechat'):
     source_list = glob.glob(f'{dir}/*.xlsx')
     rec_list = []
+    print('Wechat', '-' * 30)
     def cvt_item(filepath):
         raw = read_file(filepath)
         cleaned = clean_raw(raw)
         s = cleaned['time'].min().strftime('%y%m%d'); e = cleaned['time'].max().strftime('%y%m%d')
+        print(f'Detected data from {s} to {e}')
         os.rename(filepath, f'{dir}/wechat_{s}_{e}{os.path.splitext(filepath)[-1]}')
         record = cvt_record(cleaned)
         return record
     for f in source_list:
         rec_list.append(cvt_item(f))
     
+    print('Process complete for Wechat!\n')
     all_rec = pd.concat(rec_list, ignore_index=True)
     return all_rec
 
